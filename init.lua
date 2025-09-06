@@ -27,6 +27,12 @@ vim.opt.clipboard = "unnamedplus"
 require("vim-options")
 
 -- Setup lazy.nvim
-require("lazy").setup("plugins")
+require("lazy").setup({
+  spec = "plugins",
+  rocks = {
+    enabled = true,
+    hererocks= false
+  }
+})
 
 
