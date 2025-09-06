@@ -1,0 +1,7 @@
+# Neovim runtime files
+.undodir/
+.swap/
+.backup/
+plugin/packer_compiled.lua
+# packer data/lazy data if you vendor them – usually don’t
+site/
