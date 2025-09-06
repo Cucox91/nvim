@@ -7,10 +7,10 @@ return  {
     --Setup TreeSitter
     local config = require("nvim-treesitter.configs")
     config.setup({
-      ensure_installed = {"lua", "c", "typescript"},
+      auto_install = true,
+      --ensure_installed = {"lua", "c", "typescript"},
       highlight = {enable = true},
       indent = {enable = true},
     }) 
   end
 }
-  
