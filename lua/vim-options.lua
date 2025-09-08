@@ -9,7 +9,7 @@ vim.opt.background = "dark"
 vim.opt.number = true
 
 --For Relative line numbers
-vim.opt.relativenumber = true
+--vim.opt.relativenumber = true
 
 --When keeping bothlines it will display current line plus difference.
 
