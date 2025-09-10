@@ -14,9 +14,9 @@ return {
       automatic_installation = true,
       ensure_installed = {
         "lua_ls",
-        "ts_ls",  -- TypeScript/JavaScript
-        "eslint", -- ESLint LSP (for JS/TS diagnostics)
-        "clangd", -- C Compiler added by me.
+        "ts_ls",    -- TypeScript/JavaScript
+        "eslint",   -- ESLint LSP (for JS/TS diagnostics)
+        "clangd",   -- C Compiler added by me.
         -- add more here as needed: "pyright", "omnisharp", etc.
       },
     },
@@ -29,7 +29,7 @@ return {
     config = function()
       -- ---------- Diagnostics UI ----------
       vim.diagnostic.config({
-        virtual_text = { spacing = 2, prefix = "●" }, -- inline text
+        virtual_text = { spacing = 6, prefix = "●" }, -- inline text
         signs = true,
         underline = true,
         update_in_insert = false,
