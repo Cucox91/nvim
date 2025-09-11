@@ -3,23 +3,33 @@ return {
   {
     "williamboman/mason.nvim",
     lazy = false,
-    config = true, -- same as: function() require("mason").setup() end
+    opts = {
+      -- keep defaults; make sure Mason's bin is in PATH so exepath() finds it
+      PATH = "append",
+    },
   },
 
   -- Mason <-> lspconfig glue
   {
     "williamboman/mason-lspconfig.nvim",
     lazy = false,
-    opts = {
-      automatic_installation = true,
-      ensure_installed = {
+    opts = function()
+      local is_mac = vim.loop.os_uname().sysname == "Darwin"
+      local list = {
         "lua_ls",
-        "ts_ls",    -- TypeScript/JavaScript
-        "eslint",   -- ESLint LSP (for JS/TS diagnostics)
-        "clangd",   -- C Compiler added by me.
-        -- add more here as needed: "pyright", "omnisharp", etc.
-      },
-    },
+        -- TypeScript name changed: newer lspconfig uses ts_ls, older uses tsserver.
+        -- We ask Mason for both; it will install what it recognizes (harmless to list both).
+        "ts_ls",
+        "eslint",
+      }
+      if is_mac then
+        table.insert(list, "clangd") -- only try on macOS
+      end
+      return {
+        automatic_installation = true,
+        ensure_installed = list,
+      }
+    end,
   },
 
   -- Core LSP configs
@@ -29,7 +39,7 @@ return {
     config = function()
       -- ---------- Diagnostics UI ----------
       vim.diagnostic.config({
-        virtual_text = { spacing = 6, prefix = "●" }, -- inline text
+        virtual_text = { spacing = 6, prefix = "●" },
         signs = true,
         underline = true,
         update_in_insert = false,
@@ -67,48 +77,65 @@ return {
       end
 
       local lspconfig = require("lspconfig")
+      local function has_server(name)
+        return lspconfig[name] ~= nil
+      end
 
       -- Lua (Neovim config)
-      lspconfig.lua_ls.setup({
-        on_attach = on_attach,
-        capabilities = capabilities,
-        settings = {
-          Lua = {
-            diagnostics = { globals = { "vim" } },
-            workspace = { checkThirdParty = false },
+      if has_server("lua_ls") then
+        lspconfig.lua_ls.setup({
+          on_attach = on_attach,
+          capabilities = capabilities,
+          settings = {
+            Lua = {
+              diagnostics = { globals = { "vim" } },
+              workspace = { checkThirdParty = false },
+            },
           },
-        },
-      })
+        })
+      end
 
-      -- TypeScript / JavaScript
-      lspconfig.ts_ls.setup({
-        on_attach = on_attach,
-        capabilities = capabilities,
-      })
+      -- TypeScript / JavaScript — support both names
+      local ts_name = has_server("ts_ls") and "ts_ls" or (has_server("tsserver") and "tsserver" or nil)
+      if ts_name then
+        lspconfig[ts_name].setup({
+          on_attach = on_attach,
+          capabilities = capabilities,
+        })
+      end
 
-      -- ESLint (surfaces lint warnings/errors for JS/TS)
-      lspconfig.eslint.setup({
-        on_attach = function(client, bufnr)
-          on_attach(client, bufnr)
-          -- Optional: auto-fix on save if your project wants it
-          vim.api.nvim_create_autocmd("BufWritePre", {
-            buffer = bufnr,
-            command = "EslintFixAll",
-          })
-        end,
-        capabilities = capabilities,
-      })
+      -- ESLint (guard if plugin/server exists)
+      if has_server("eslint") then
+        lspconfig.eslint.setup({
+          on_attach = function(client, bufnr)
+            on_attach(client, bufnr)
+            -- Optional: only if you have EslintFixAll available
+            pcall(function()
+              vim.api.nvim_create_autocmd("BufWritePre", {
+                buffer = bufnr,
+                command = "EslintFixAll",
+              })
+            end)
+          end,
+          capabilities = capabilities,
+        })
+      end
 
-      -- C configurations
-      lspconfig.clangd.setup({
-        on_attach = on_attach,
-        capabilities = capabilities
-      })
-
+      -- C / C++ (clangd) — prefer first clangd in PATH (Mason on mac, system on Pi)
+      local clangd_bin = vim.fn.exepath("clangd")
+      if clangd_bin == "" then clangd_bin = "clangd" end
+      if has_server("clangd") then
+        lspconfig.clangd.setup({
+          on_attach = on_attach,
+          capabilities = capabilities,
+          cmd = { clangd_bin, "--background-index", "--clang-tidy" },
+          init_options = { compilationDatabasePath = "." },
+        })
+      end
     end,
   },
 
-  -- (Optional but recommended) Quick diagnostics list
+  -- (Optional) Quick diagnostics list
   {
     "folke/trouble.nvim",
     opts = { use_diagnostic_signs = true },

@@ -1,6 +1,7 @@
 return {
   "lukas-reineke/virt-column.nvim",
   lazy = false,  -- so the mapping exists on startup
+  priority = 500,
   config = function()
     local vc = require("virt-column")
 
